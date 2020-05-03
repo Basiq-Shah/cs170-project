@@ -14,52 +14,55 @@ def solve(G):
     """
 
     # TODO: your code here!
-    nodes = list(G.nodes)
+    master = []
     smallest = [False, math.inf, math.inf]
+    
+    #  'marked', 'neighbor', 'alone', 'banned'
 
-    for n in nodes:
-        master = []
-        T = nx.Graph()
-        T.add_node(n)
+    for n in nx.nodes(G):
+        G.add_node(n, state='alone')
 
-        finder(G, T, [], list(G.neighbors(n)), master, [n], 0, 0, smallest)
+    for n in nx.nodes(G):    
+        T = Graph()
+        T.add_node(n, state='marked')
+        for a in nx.neighbors(T, n):
+            T.add_node(a, state='neighbor')
+        curr = [n]
+        dom(G, T, master, smallest, curr)
 
     return smallest[0]
 
-def finder(G, T, banned, neighs, master, curr, cost, size, smallest):
-    for b in neighs[:]:
-        curr_copy = curr.copy()
-        curr_copy.append(b)
-        curr_copy.sort()
-        neighs.remove(b)
-        if (curr_copy not in master):
+def dom(G, T, master, smallest, curr):
+    visit = []
+    for n in nx.nodes(T):
+        if T.nodes[n]['state'] == 'neighbor':
+            visit.append(n)
+    for n in visit:
+        fam = curr.copy()
+        fam.append(n)
+        if (fam not in master):
+            master.append(fam)
             t2 = T.copy()
-            neighs_copy = neighs.copy()
-            banned_copy = banned.copy()
-            banned_copy.append(b)
+            t2.add_node(n, state = 'marked')
+
             temp = []
-            for (u, v, wt) in G.edges.data('weight'):
-                if ((u == b) and (v in curr_copy) or (v == b) and (u in curr_copy)):
-                    temp.append((u, v, wt))
-            temp = min( temp,  key=lambda p: p[2])
-            t2.add_edge( temp[0], temp[1], weight = temp[2])
+            for (u, v, wt) in t2.edges.data('weight'):
+                if (u == n and v in curr ) or (u in curr and v == n):
+                    temp.append([u, v, wt])
+            temp = min(temp, key = lambda p: p[2]) 
+            t2.add_edge(temp[0], temp[1], weight= temp[2] )
+            for a in nx.neighbors(t2, n):
+                if t2.nodes[a]['state'] == 'alone':
+                    t2.add_node(n, state = 'neighbor')
+                elif t2.nodes[a]['state'] == 'neighbor':
+                    t2.add_node(n, state = 'banned')
+            cost = average_pairwise_distance_fast(t2)
+            if is_valid_network(G, t2) and (cost < smallest[1] or (cost == smallest[1] and t2.number_of_nodes() < smallest[2])):
+                smallest[0] = t2
+                smallest[1] = cost
+                smallest[2] = t2.number_of_nodes()
+            dom(G, t2, master, smallest, fam)
 
-            for x in list(G.neighbors(b)):
-                if (x in neighs_copy):
-                    neighs_copy.remove(x)
-                    banned_copy.append(x)
-                elif (x not in banned_copy):
-                    neighs_copy.append(x)
-            master.append(curr_copy)
-
-            newCost = math.inf
-            if is_valid_network(G, t2):
-                newCost = average_pairwise_distance_fast(t2)
-                if ((smallest[0] == False) or (smallest[1] > cost) or (smallest[1] == cost and smallest[2] > size)):
-                    smallest[0] = t2
-                    smallest[1] = newCost
-                    smallest[2] = size + 1
-            finder(G, t2, banned_copy, neighs_copy, master, curr_copy, newCost, size + 1, smallest)
 # Here's an example of how to run your solver.
 
 # Usage: python3 solver.py test.in
