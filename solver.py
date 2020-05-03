@@ -23,7 +23,7 @@ def solve(G):
         G.add_node(n, state='alone')
 
     for n in nx.nodes(G):    
-        T = Graph()
+        T = G.copy()
         T.add_node(n, state='marked')
         for a in nx.neighbors(T, n):
             T.add_node(a, state='neighbor')
@@ -53,9 +53,9 @@ def dom(G, T, master, smallest, curr):
             t2.add_edge(temp[0], temp[1], weight= temp[2] )
             for a in nx.neighbors(t2, n):
                 if t2.nodes[a]['state'] == 'alone':
-                    t2.add_node(n, state = 'neighbor')
+                    t2.add_node(a, state = 'neighbor')
                 elif t2.nodes[a]['state'] == 'neighbor':
-                    t2.add_node(n, state = 'banned')
+                    t2.add_node(a, state = 'banned')
             cost = average_pairwise_distance_fast(t2)
             if is_valid_network(G, t2) and (cost < smallest[1] or (cost == smallest[1] and t2.number_of_nodes() < smallest[2])):
                 smallest[0] = t2
